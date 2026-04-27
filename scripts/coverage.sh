@@ -4,7 +4,7 @@ set -euo pipefail
 echo "Running tests and generating raw coverage..."
 go test ./... -coverprofile=coverage.raw.out
 
-echo "Filtering coverage (excluding generated & entry code)..."
+echo "Filtering coverage (excluding generated & entry code).xxxx.."
 
 {
   head -n 1 coverage.raw.out
