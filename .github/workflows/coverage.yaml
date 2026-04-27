@@ -13,24 +13,28 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+      # ---------- Checkout PR branch ----------
       - name: Checkout PR code
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
+          path: pr
 
       - name: Setup Go
         uses: actions/setup-go@v5
         with:
-          go-version-file: go.mod
+          go-version-file: pr/go.mod
 
-      - name: Install bc
+      - name: Install bc (for float comparison)
         run: sudo apt-get update && sudo apt-get install -y bc
 
+      # ---------- Coverage on PR branch ----------
       - name: Run coverage on PR branch
         run: |
+          cd pr
           chmod +x ./scripts/coverage.sh
-          COV_OUTPUT=$(./scripts/coverage.sh)
 
+          COV_OUTPUT=$(./scripts/coverage.sh)
           echo "$COV_OUTPUT"
 
           PR_COVERAGE=$(echo "$COV_OUTPUT" \
@@ -40,18 +44,23 @@ jobs:
 
           echo "PR_COVERAGE=$PR_COVERAGE" >> $GITHUB_ENV
 
+      # ---------- Checkout base branch in clean workspace ----------
       - name: Checkout base branch
         if: github.event_name == 'pull_request'
-        run: |
-          echo "Base branch: ${{ github.base_ref }}"
-          git fetch origin
-          git checkout origin/${{ github.base_ref }}
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: ${{ github.base_ref }}
+          path: base
 
+      # ---------- Coverage on base branch ----------
       - name: Run coverage on base branch
         if: github.event_name == 'pull_request'
         run: |
-          COV_OUTPUT=$(./scripts/coverage.sh)
+          cd base
+          chmod +x ./scripts/coverage.sh
 
+          COV_OUTPUT=$(./scripts/coverage.sh)
           echo "$COV_OUTPUT"
 
           BASE_COVERAGE=$(echo "$COV_OUTPUT" \
@@ -61,6 +70,7 @@ jobs:
 
           echo "BASE_COVERAGE=$BASE_COVERAGE" >> $GITHUB_ENV
 
+      # ---------- Compare PR vs base ----------
       - name: Compare coverage (PR vs base)
         if: github.event_name == 'pull_request'
         run: |
