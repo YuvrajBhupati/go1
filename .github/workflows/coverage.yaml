@@ -124,6 +124,9 @@ jobs:
         with:
           go-version: "1.25"
 
+      - name: Install bc
+        run: sudo apt-get update && sudo apt-get install -y bc
+
       - name: Run coverage on PR branch
         run: |
           
@@ -145,7 +148,7 @@ jobs:
 
           echo "PR Coverage : ${PR_COVERAGE}%"
 
-          if awk "BEGIN {exit !(${PR_COVERAGE} < 80)}"; then
+          if (( $(echo "$PR_COVERAGE < 80" | bc -l) )); then
             echo "❌ Coverage gate failed (minimum 80%)"
             exit 1
           fi
