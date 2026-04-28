@@ -125,27 +125,28 @@ jobs:
           go-version: "1.25"
 
       - name: Run coverage on PR branch
+        shell: bash
         run: |
-          
+          set -o pipefail
           chmod +x ./scripts/coverage.sh
-
-          COV_OUTPUT=$(./scripts/coverage.sh)
+          set +e
+          COV_OUTPUT=$(./scripts/coverage.sh 2>&1)  
+          SCRIPT_EXIT=$?
+          set -e
           echo "$COV_OUTPUT"
 
-          #PR_COVERAGE=$(echo "$COV_OUTPUT" | grep -oE '[0-9]+(\.[0-9]+)?' | tail -n 1)
-          PR_COVERAGE=75
-          echo "DEBUG: Raw PR_COVERAGE='$PR_COVERAGE'"
+          PR_COVERAGE=$(echo "$COV_OUTPUT" | grep -Eo 'Final coverage:\s*[0-9]+(\.[0-9]+)?' | grep -Eo '[0-9]+(\.[0-9]+)?' | tail -n 1)
 
-          
           if [[ -z "$PR_COVERAGE" ]]; then
-            echo "❌ ERROR: Could not parse coverage from script output"
+            echo "ERROR: Could not parse coverage from script output"
+            echo "Tip: Ensure script prints 'Final coverage: <num>%'"
             exit 1
           fi
 
           echo "PR Coverage : ${PR_COVERAGE}%"
 
           if awk "BEGIN {exit ($PR_COVERAGE < 80 ? 0 : 1)}"; then
-             echo "❌ Coverage gate failed (minimum 80%)"
+             echo "Coverage gate failed (minimum 80%)"
              exit 1
           fi
-          echo "✅ Coverage gate passed"
+          echo "Coverage gate passed"
