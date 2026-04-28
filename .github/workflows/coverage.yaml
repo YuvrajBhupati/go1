@@ -151,11 +151,3 @@ jobs:
           fi
 
           echo "✅ Coverage gate passed"
-
- 
-
-
-
-
-
-
